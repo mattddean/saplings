@@ -11,6 +11,8 @@ datasource db {
 
 model Example {
   id String @id @default(cuid())
+
+  @@map("examples")
 }
 
 // nextauth
@@ -30,6 +32,7 @@ model Account {
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 // nextauth
@@ -39,6 +42,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }
 
 // nextauth
@@ -50,6 +55,8 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+
+  @@map("users")
 }
 
 // nextauth
@@ -59,4 +66,5 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@map("verification_tokens")
 }
