@@ -9,6 +9,10 @@ datasource db {
   referentialIntegrity = "prisma"
 }
 
+model Example {
+  id String @id @default(cuid())
+}
+
 // nextauth
 model Account {
   id                String  @id @default(cuid())
