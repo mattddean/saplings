@@ -9,6 +9,7 @@
     "mapbox",
     "superjson",
     "tailwindcss",
+    "tanstack",
     "trpc",
     "zustand"
   ],
