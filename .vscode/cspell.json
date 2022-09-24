@@ -4,9 +4,12 @@
   "dictionaryDefinitions": [],
   "dictionaries": [],
   "words": [
+    "authed",
+    "cloudinary",
     "liveblocks",
     "livesign",
     "mapbox",
+    "nextauth",
     "superjson",
     "tailwindcss",
     "tanstack",
@@ -14,7 +17,8 @@
     "zustand"
   ],
   "ignoreWords": [
-    "mapboxgl"
+    "mapboxgl",
+    "prestocloud"
   ],
   "import": []
 }

@@ -15,6 +15,24 @@ model Example {
   @@map("examples")
 }
 
+model Petition {
+  id     String          @id @default(cuid())
+  images PetitionImage[]
+  slug   String
+
+  @@map("petitions")
+}
+
+model PetitionImage {
+  id         String    @id @default(cuid())
+  src        String
+  alt        String
+  petition   Petition? @relation(fields: [petitionId], references: [id])
+  petitionId String?
+
+  @@map("petition_images")
+}
+
 // nextauth
 model Account {
   id                String  @id @default(cuid())
