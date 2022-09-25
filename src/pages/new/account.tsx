@@ -76,11 +76,11 @@ const CreatePetitionStep2: NextPageWithLayout<
         title: unauthenticatedPetitionTitle,
       });
 
-      // wait for router to be ready
+      // wait at least 10 seconds for router to be ready
       const waitMs = (ms: number) =>
         new Promise((resolve) => setTimeout(resolve, ms));
-      for (let i = 0; i < 500; i++) {
-        await waitMs(1);
+      for (let i = 0; i < 2000; i++) {
+        await waitMs(5);
         if (router.isReady) break;
       }
       if (!router.isReady) throw new Error("Unable to redirect to petition");
@@ -88,13 +88,13 @@ const CreatePetitionStep2: NextPageWithLayout<
       // send user to their new petition
       await router.replace(`/s/${result.petition.slug}`);
 
+      // it's unclear if this will run, but it doesn't matter because we're navigating away from this page
+      // and all this does is inform visibility of CreatingSaplingSpinner
       isCreatingPetition.current = false;
     };
-    asyncFn()
-      .then()
-      .catch((error) => {
-        throw error;
-      });
+    asyncFn().catch((error) => {
+      throw error;
+    });
   }, [
     session.status,
     createPetitionAndUserMutation,
@@ -102,7 +102,7 @@ const CreatePetitionStep2: NextPageWithLayout<
     unauthenticatedPetitionTitle,
   ]);
 
-  if (isCreatingPetition) {
+  if (isCreatingPetition.current) {
     return <CreatingSaplingSpinner />;
   }
 
