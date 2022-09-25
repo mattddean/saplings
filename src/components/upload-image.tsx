@@ -6,6 +6,7 @@ const CreatePetition: NextPage = () => {
   const [image, setImage] = useState<File>();
   const [error, setError] = useState<string>();
 
+  // pre-fetch an image upload signature so that the user doesn't have to wait for this process while uploading their image
   const signatureQuery = trpc.petition.generateImageUploadSignature.useQuery();
 
   const uploadImage = () => {
@@ -16,7 +17,7 @@ const CreatePetition: NextPage = () => {
 
     const { data } = signatureQuery;
     if (!data) {
-      setError("There was an error uploading your image");
+      setError("Unable to process images at this time");
       return;
     }
 

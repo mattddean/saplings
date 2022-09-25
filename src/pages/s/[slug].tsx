@@ -6,6 +6,7 @@ import type {
   InferGetStaticPropsType,
   NextPage,
 } from "next";
+import { useSession } from "next-auth/react";
 import NextImage from "next/future/image";
 import superjson from "superjson";
 import { createContextInner } from "../../server/trpc/context";
@@ -23,21 +24,26 @@ export const getStaticProps: GetStaticProps<{
     transformer: superjson,
   });
   const slug = params?.slug as string;
-  // prefetch `post.byId`
+
+  // prefetch
   const result = await ssg.petition.getOne.fetch({ slug });
 
   if (!result) return { notFound: true };
 
   return {
     props: {
+      // populate trpc state with prefetched data
       trpcState: ssg.dehydrate(),
       slug,
     },
+    // ISR
+    revalidate: 60,
   };
 };
 
 export const getStaticPaths: GetStaticPaths = () => {
   return {
+    // we'll rely entirely on ISR to statically generate our pages so that our build times do not climb with more petitions
     paths: [],
     fallback: "blocking",
   };
@@ -46,20 +52,33 @@ export const getStaticPaths: GetStaticPaths = () => {
 const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   slug,
 }) => {
-  const postQuery = trpc.petition.getOne.useQuery({ slug });
+  const publicPetitionQuery = trpc.petition.getOne.useQuery({ slug });
 
-  if (postQuery.isLoading) {
+  const session = useSession().data;
+  // if the user is logged in, we make this query to find out if they are an admin of this petition
+  const privatePetitionQuery = trpc.petition.getOneForAdmin.useQuery(
+    { slug },
+    { enabled: !!session }
+  );
+  const privatePetition = privatePetitionQuery.data;
+  const userIsAdmin = !!privatePetition;
+
+  if (publicPetitionQuery.isLoading) {
     // won't happen since we're using `fallback: "blocking"`
     return <>Loading...</>;
   }
 
-  const { data } = postQuery;
-  if (!data) {
+  const publicPetition = publicPetitionQuery.data;
+  if (!publicPetition) {
     throw new Error("Internal server error");
   }
 
+  // Prefer displaying privatePetition's data to admins because it is not cached.
+  // If an admin makes a change, they expect to see their update immediately rather than wait for ISR to re-generate the page.
+  const petition = privatePetition || publicPetition;
+
   // we treat the first image as the main image
-  const mainImage = data.images[0];
+  const mainImage = publicPetition.images[0];
 
   return (
     <div className="container mx-auto">
@@ -67,9 +86,10 @@ const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
         {mainImage && (
           <div className="relative">
             <NextImage src={mainImage.src} alt={mainImage.alt} fill />
+            {userIsAdmin && <div>Edit</div>}
           </div>
         )}
-        This is the article
+        {petition.title}
       </article>
     </div>
   );

@@ -38,13 +38,13 @@
     ".serverless": true,
     ".webpack": true,
     "webpack.config.js": true,
-    "layers": true,
     "tsconfig.tsbuildinfo": true,
     "tailwind.config.cjs": true,
     "postcss.config.cjs": true,
     "next-env.d.ts": true,
     "next.config.mjs": true,
-    ".eslintrc.json": true
+    ".eslintrc.json": true,
+    "docker-compose.yml": true
   },
   "tsInterfaceSorter.emptyLineBetweenProperties": false
 }
