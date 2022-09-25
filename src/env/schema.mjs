@@ -15,6 +15,8 @@ export const serverSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string(),
   CLOUDINARY_API_KEY: z.string(),
   CLOUDINARY_API_SECRET: z.string(),
+  HELLOSIGN_API_KEY: z.string(),
+  HELLOSIGN_TEMPLATE_ID: z.string(),
 });
 
 /**
@@ -24,6 +26,7 @@ export const serverSchema = z.object({
  */
 export const clientSchema = z.object({
   NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY: z.string(),
+  NEXT_PUBLIC_HELLOSIGN_CLIENT_ID: z.string(),
 });
 
 /**
@@ -35,4 +38,5 @@ export const clientSchema = z.object({
 export const clientEnv = {
   NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY:
     process.env.NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY,
+  NEXT_PUBLIC_HELLOSIGN_CLIENT_ID: process.env.NEXT_PUBLIC_HELLOSIGN_CLIENT_ID,
 };

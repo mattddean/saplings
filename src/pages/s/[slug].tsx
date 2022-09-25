@@ -9,6 +9,7 @@ import type {
 import { useSession } from "next-auth/react";
 import NextImage from "next/future/image";
 import superjson from "superjson";
+import { env } from "../../env/client.mjs";
 import { createContextInner } from "../../server/trpc/context";
 import { appRouter } from "../../server/trpc/router";
 import { trpc } from "../../utils/trpc";
@@ -52,6 +53,28 @@ export const getStaticPaths: GetStaticPaths = () => {
 const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   slug,
 }) => {
+  const embeddedSignUrlMutation =
+    trpc.petition.createEmbeddedSignUrl.useMutation();
+
+  const handleSignClick = () => {
+    const asyncFn = async () => {
+      const result = await embeddedSignUrlMutation.mutateAsync({ slug });
+
+      // Importing hellosign-embedded runs code that tries to access the window global variable, which is not defined on the server,
+      // so we dynamically import the library on the client when it's needed. As an added bonus, we won't ship the library in this page's
+      // initial JS bundle, which is good for the performance.
+      const HellosignEmbedded = (await import("hellosign-embedded")).default;
+      const client = new HellosignEmbedded();
+      client.open(result.iframeSignUrl, {
+        clientId: env.NEXT_PUBLIC_HELLOSIGN_CLIENT_ID,
+        skipDomainVerification: true,
+      });
+    };
+    asyncFn().catch((error) => {
+      throw error;
+    });
+  };
+
   const publicPetitionQuery = trpc.petition.getOne.useQuery({ slug });
 
   const session = useSession();
@@ -91,6 +114,10 @@ const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
         {userIsAdmin && <div>Edit</div>}
         {petition.title}
       </article>
+      <div>
+        <h2>Sign this Sapling</h2>
+        <button onClick={handleSignClick}>Sign</button>
+      </div>
     </div>
   );
 };

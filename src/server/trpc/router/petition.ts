@@ -1,9 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import * as Cloudinary from "cloudinary";
+import * as HelloSignSDK from "hellosign-sdk";
 import ShortUniqueId from "short-unique-id";
 import { z } from "zod";
 import { UserPetitionRoleName } from "../../../../prisma/types";
+import { env as clientEnv } from "../../../env/client.mjs";
+import { env } from "../../../env/server.mjs";
 import { config } from "../../cloudinary/config";
 import { buildSlug } from "../../lib/slug-utils";
 import { authedProcedure, t } from "../trpc";
@@ -156,4 +159,72 @@ export const petitionRouter = t.router({
       url,
     };
   }),
+  /**
+   * Dynamically generate a signature request for the user based on our standard Hellosign template for Sapling Agreer documents,
+   * then use that signature request to generate an iframe URL that the user can use to sign the document without leaving our site.
+   */
+  createEmbeddedSignUrl: authedProcedure
+    .input(z.object({ slug: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const signatureRequestClient = new HelloSignSDK.SignatureRequestApi();
+      signatureRequestClient.username = env.HELLOSIGN_API_KEY;
+
+      const userEmail = ctx.session.user.email;
+      const userName = ctx.session.user.name;
+      if (!userEmail || !userName) {
+        // we never expect to get here
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to find user",
+        });
+      }
+
+      const data: HelloSignSDK.SignatureRequestCreateEmbeddedWithTemplateRequest =
+        {
+          clientId: clientEnv.NEXT_PUBLIC_HELLOSIGN_CLIENT_ID,
+          templateIds: [env.HELLOSIGN_TEMPLATE_ID],
+          signers: [
+            { emailAddress: userEmail, name: userName, role: "Agreer" },
+          ],
+          // TODO: maybe include the saplings's title and body content so that the content of the Sapling is frozen in time when the user signs it.
+          // If the content of the Sapling changes in the future, the user may no longer agree to it.
+          customFields: [
+            {
+              name: "sapling_url",
+              // TODO: maybe extract the base url to an environment variable
+              value: `https://saplings.netlify.app/s/${input.slug}`,
+            },
+          ],
+          testMode: true,
+        };
+      // TODO: error handling?
+      const result =
+        await signatureRequestClient.signatureRequestCreateEmbeddedWithTemplate(
+          data
+        );
+      const signatureId =
+        result.body.signatureRequest?.signatures?.[0]?.signatureId;
+      if (!signatureId) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to create signature request",
+        });
+      }
+
+      // TODO: store signature id in our db
+
+      const embeddedClient = new HelloSignSDK.EmbeddedApi();
+      embeddedClient.username = env.HELLOSIGN_API_KEY;
+
+      const signUrlResult = await embeddedClient.embeddedSignUrl(signatureId);
+      const signUrl = signUrlResult.body.embedded?.signUrl;
+      if (!signUrl) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to create sign url",
+        });
+      }
+
+      return { iframeSignUrl: signUrl };
+    }),
 });
