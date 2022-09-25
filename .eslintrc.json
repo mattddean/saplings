@@ -4,5 +4,9 @@
     "project": "./tsconfig.json"
   },
   "plugins": ["@typescript-eslint"],
-  "extends": ["next/core-web-vitals", "plugin:@typescript-eslint/recommended"]
+  "extends": ["next/core-web-vitals", "plugin:@typescript-eslint/recommended"],
+  "rules": {
+    // explicit any's are useful when creating a function signature and we don't are its return type
+    "@typescript-eslint/no-explicit-any": "off"
+  }
 }

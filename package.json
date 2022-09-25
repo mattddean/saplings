@@ -19,10 +19,13 @@
     "@trpc/react": "10.0.0-proxy-alpha.70",
     "@trpc/server": "10.0.0-proxy-alpha.70",
     "cloudinary": "^1.32.0",
+    "jotai": "^1.8.4",
     "next": "^12.3.0",
     "next-auth": "^4.10.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-hook-form": "^7.36.1",
+    "short-unique-id": "^4.4.4",
     "superjson": "^1.9.1",
     "zod": "^3.18.0",
     "zustand": "^3.7.2"

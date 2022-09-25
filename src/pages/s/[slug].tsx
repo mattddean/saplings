@@ -54,13 +54,13 @@ const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
 }) => {
   const publicPetitionQuery = trpc.petition.getOne.useQuery({ slug });
 
-  const session = useSession().data;
+  const session = useSession();
   // if the user is logged in, we make this query to find out if they are an admin of this petition
   const privatePetitionQuery = trpc.petition.getOneForAdmin.useQuery(
     { slug },
-    { enabled: !!session }
+    { enabled: session.status === "authenticated" }
   );
-  const privatePetition = privatePetitionQuery.data;
+  const privatePetition = privatePetitionQuery.data?.petition;
   const userIsAdmin = !!privatePetition;
 
   if (publicPetitionQuery.isLoading) {
@@ -68,7 +68,7 @@ const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
     return <>Loading...</>;
   }
 
-  const publicPetition = publicPetitionQuery.data;
+  const publicPetition = publicPetitionQuery.data?.petition;
   if (!publicPetition) {
     throw new Error("Internal server error");
   }
@@ -78,7 +78,7 @@ const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
   const petition = privatePetition || publicPetition;
 
   // we treat the first image as the main image
-  const mainImage = publicPetition.images[0];
+  const mainImage = petition.images[0];
 
   return (
     <div className="container mx-auto">
@@ -86,9 +86,9 @@ const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
         {mainImage && (
           <div className="relative">
             <NextImage src={mainImage.src} alt={mainImage.alt} fill />
-            {userIsAdmin && <div>Edit</div>}
           </div>
         )}
+        {userIsAdmin && <div>Edit</div>}
         {petition.title}
       </article>
     </div>
