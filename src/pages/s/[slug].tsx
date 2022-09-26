@@ -5,11 +5,12 @@ import type {
   GetStaticProps,
   InferGetStaticPropsType,
 } from "next";
-import { useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import NextImage from "next/future/image";
 import { ReactElement } from "react";
 import superjson from "superjson";
 import Layout from "../../components/layout";
+import EditImageOverlay from "../../components/upload-image";
 import { env } from "../../env/client.mjs";
 import { createContextInner } from "../../server/trpc/context";
 import { appRouter } from "../../server/trpc/router";
@@ -57,8 +58,16 @@ const Petition: NextPageWithLayout<
 > = ({ slug }) => {
   const embeddedSignUrlMutation =
     trpc.petition.createEmbeddedSignUrl.useMutation();
+  const session = useSession();
 
   const handleSignClick = () => {
+    // The user must be logged in to sign a petition, so we send them to the login page if they're not.
+    // They should be sent right back to this petition page once they're done logging in.
+    if (session.status !== "authenticated") {
+      signIn();
+      return;
+    }
+
     const asyncFn = async () => {
       const result = await embeddedSignUrlMutation.mutateAsync({ slug });
 
@@ -79,7 +88,6 @@ const Petition: NextPageWithLayout<
 
   const publicPetitionQuery = trpc.petition.getOne.useQuery({ slug });
 
-  const session = useSession();
   // if the user is logged in, we make this query to find out if they are an admin of this petition
   const privatePetitionQuery = trpc.petition.getOneForAdmin.useQuery(
     { slug },
@@ -105,22 +113,89 @@ const Petition: NextPageWithLayout<
   // we treat the first image as the main image
   const mainImage = petition.images[0];
 
-  return (
-    <div className="container mx-auto">
-      <article>
-        {mainImage && (
-          <div className="relative">
-            <NextImage src={mainImage.src} alt={mainImage.alt} fill />
+  // a convoluted way to overlay a div on a next/future/image
+  const imageArea = (
+    <div
+      className="grid"
+      style={{
+        gridTemplateColumns: "1fr",
+        gridTemplateRows: "350px",
+        gridColumnGap: "0px",
+        gridRowGap: "0px",
+        alignContent: "center",
+        justifyContent: "center",
+      }}
+    >
+      {mainImage && (
+        <div style={{ gridArea: "1 / 1 / 2 / 2" }}>
+          <div
+            className="relative"
+            style={{
+              display: "grid",
+              minWidth: "350px",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <NextImage
+              className="shadow-lg rounded-lg w-100"
+              src={mainImage.url}
+              alt={mainImage.alt || ""}
+              style={{ objectFit: "cover", width: "100%", height: "100%" }}
+              fill
+            />
           </div>
-        )}
-        {userIsAdmin && <div>Edit</div>}
-        {petition.title}
-      </article>
-      <div>
-        <h2>Sign this Sapling</h2>
-        <button onClick={handleSignClick}>Sign</button>
-      </div>
+        </div>
+      )}
+      {userIsAdmin && (
+        /**
+         * @todo allow removing image without setting a replacement
+         * @todo show a loading state while uploading image
+         */
+        <>
+          <EditImageOverlay
+            petitionSlug={slug}
+            className={`cursor-pointer h-full w-full rounded-lg z-10 ${
+              !mainImage ? "bg-gray-200" : ""
+            } hover:bg-white peer opacity-40 transition-colors`}
+            style={{
+              gridArea: "1 / 1 / 2 / 2",
+              display: "grid",
+              alignItems: "center",
+            }}
+            doneAddingImage={privatePetitionQuery.refetch}
+          />
+          <div
+            className="relative text-center items-center opacity-0 peer-hover:opacity-100 transition-opacity"
+            style={{
+              gridArea: "1 / 1 / 2 / 2",
+              display: "grid",
+              minWidth: "350px",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            {mainImage ? "Change Image" : "Add Image"}
+          </div>
+        </>
+      )}
     </div>
+  );
+
+  return (
+    <main className="container mx-auto">
+      <div className="h-12" />
+      <article>
+        <h1 className="text-5xl text-center">{petition.title}</h1>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="relative h-64 w-full">{imageArea}</div>
+          <div>
+            <h2>Sign this Petition</h2>
+            <button onClick={handleSignClick}>Sign</button>
+          </div>
+        </div>
+      </article>
+    </main>
   );
 };
 

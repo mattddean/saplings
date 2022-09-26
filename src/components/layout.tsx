@@ -30,7 +30,7 @@ const Layout: FC<Props> = ({ children }) => {
           <div className="text-sm lg:flex-grow">
             <NextLink href="/me">
               <div className="block mt-4 lg:inline-block lg:mt-0 text-teal-200 hover:text-white mr-4 cursor-pointer">
-                My Saplings
+                My Petitions
               </div>
             </NextLink>
             <NextLink href="/explore">

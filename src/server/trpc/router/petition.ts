@@ -18,7 +18,11 @@ export const petitionRouter = t.router({
       const petition = await ctx.prisma.petition.findFirst({
         where: { slug: input.slug },
         select: {
-          images: { select: { src: true, alt: true } },
+          images: {
+            select: { cloudinarySecureUrl: true, alt: true },
+            // the image with the highest position is the main image
+            orderBy: { position: "desc" },
+          },
           slug: true,
           title: true,
         },
@@ -27,7 +31,10 @@ export const petitionRouter = t.router({
       // we return a smaller subset of the petition to unauthenticated users
       return {
         petition: {
-          images: petition.images,
+          images: petition.images.map((image) => ({
+            url: image.cloudinarySecureUrl,
+            alt: image.alt,
+          })),
           slug: petition.slug,
           title: petition.title,
         },
@@ -48,7 +55,10 @@ export const petitionRouter = t.router({
           },
         },
         select: {
-          images: { select: { src: true, alt: true } },
+          images: {
+            select: { cloudinarySecureUrl: true, alt: true },
+            orderBy: { position: "desc" },
+          },
           slug: true,
           title: true,
         },
@@ -57,10 +67,13 @@ export const petitionRouter = t.router({
         return {
           petition: undefined,
         };
-      // we return a larger subset of the petition to authenticated users
+      // TODO: return a larger subset of the petition to authenticated users
       return {
         petition: {
-          images: petition.images,
+          images: petition.images.map((image) => ({
+            url: image.cloudinarySecureUrl,
+            alt: image.alt,
+          })),
           slug: petition.slug,
           title: petition.title,
         },
@@ -159,6 +172,40 @@ export const petitionRouter = t.router({
       url,
     };
   }),
+  /** Link a cloudinary image to a petition */
+  linkImage: authedProcedure
+    .input(
+      z.object({
+        cloudinarySecureUrl: z.string(),
+        cloudinaryUrl: z.string(),
+        cloudinaryAssetId: z.string(),
+        slug: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // TODO: verify that user is admin of this slug
+      await ctx.prisma.$transaction(async (tx) => {
+        // figure out what the next position is
+        const existingImages = await tx.petitionImage.findMany({
+          select: { position: true },
+          where: { petition: { slug: input.slug } },
+          orderBy: { position: "asc" },
+        });
+        let lastPosition = existingImages[existingImages.length - 1]?.position;
+        if (!lastPosition) lastPosition = 0;
+
+        // create image connected to this petition with position one higher than the last
+        await tx.petitionImage.create({
+          data: {
+            cloudinarySecureUrl: input.cloudinarySecureUrl,
+            cloudinaryUrl: input.cloudinaryUrl,
+            cloudinaryAssetId: input.cloudinaryAssetId,
+            petition: { connect: { slug: input.slug } },
+            position: lastPosition + 1,
+          },
+        });
+      });
+    }),
   /**
    * Dynamically generate a signature request for the user based on our standard Hellosign template for Sapling Agreer documents,
    * then use that signature request to generate an iframe URL that the user can use to sign the document without leaving our site.

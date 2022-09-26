@@ -21,6 +21,7 @@
   ],
   "ignoreWords": [
     "mapboxgl",
+    "nextjs",
     "prestocloud"
   ],
   "import": []

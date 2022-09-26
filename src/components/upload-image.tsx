@@ -1,15 +1,21 @@
-import type { NextPage } from "next";
-import { useState } from "react";
+import { CSSProperties, FC, useRef, useState } from "react";
 import { trpc } from "../utils/trpc";
 
-const CreatePetition: NextPage = () => {
-  const [image, setImage] = useState<File>();
+/** An overlay designed to be placed over the main image such that it can be edited by the admin of the petition */
+const EditImageOverlay: FC<{
+  className?: string;
+  style?: CSSProperties;
+  petitionSlug: string;
+  doneAddingImage?: () => any;
+}> = ({ className, style, petitionSlug, doneAddingImage }) => {
   const [error, setError] = useState<string>();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // pre-fetch an image upload signature so that the user doesn't have to wait for this process while uploading their image
   const signatureQuery = trpc.petition.generateImageUploadSignature.useQuery();
+  const createImageMutation = trpc.petition.linkImage.useMutation();
 
-  const uploadImage = () => {
+  const uploadImage = (image: File | undefined) => {
     if (!image) {
       // ui should have prevented this
       throw new Error();
@@ -34,27 +40,47 @@ const CreatePetition: NextPage = () => {
         method: "post",
         body: formData,
       });
-      return response.json();
+      const result = (await response.json()) as {
+        asset_id: string;
+        secure_url: string;
+        url: string;
+      };
+      await createImageMutation.mutateAsync({
+        cloudinaryAssetId: result.asset_id,
+        cloudinarySecureUrl: result.secure_url,
+        cloudinaryUrl: result.url,
+        slug: petitionSlug,
+      });
+      if (doneAddingImage) doneAddingImage();
     };
-    asyncFunc().catch(setError);
+    asyncFunc().catch((error) => {
+      throw error;
+    });
   };
 
   if (error) {
     return <div>{error}</div>;
   }
 
+  if (signatureQuery.isLoading) return null;
+
+  // The input is the true file input.
+  // The button is a fake one that clicks the real one when clicked.
   return (
-    <div>
-      <div>
-        <input type="file" onChange={(e) => setImage(e.target.files?.[0])} />
-        {signatureQuery.isLoading ? (
-          <button disabled>Please wait</button>
-        ) : (
-          <button onClick={uploadImage}>Upload</button>
-        )}
-      </div>
-    </div>
+    <>
+      <input
+        ref={inputRef}
+        className="hidden"
+        type="file"
+        onChange={(e) => uploadImage(e.target.files?.[0])}
+      />
+      <div
+        className={className}
+        style={style}
+        onClick={() => inputRef.current?.click()}
+      ></div>
+    </>
   );
 };
 
-export default CreatePetition;
+export default EditImageOverlay;

@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["referentialIntegrity"]
+  previewFeatures = ["referentialIntegrity", "interactiveTransactions"]
 }
 
 datasource db {
@@ -26,11 +26,14 @@ model Petition {
 }
 
 model PetitionImage {
-  id         String    @id @default(cuid())
-  src        String
-  alt        String
-  petition   Petition? @relation(fields: [petitionId], references: [id])
-  petitionId String?   @map("petition_id")
+  id                  String   @id @default(cuid())
+  alt                 String?
+  cloudinarySecureUrl String   @map("cloudinary_secure_url")
+  cloudinaryUrl       String   @map("cloudinary_url")
+  cloudinaryAssetId   String   @map("cloudinary_asset_id")
+  position            Int
+  petition            Petition @relation(fields: [petitionId], references: [id])
+  petitionId          String   @map("petition_id")
 
   @@map("petition_images")
 }
