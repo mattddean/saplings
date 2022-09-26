@@ -7,7 +7,7 @@ import type {
 } from "next";
 import { signIn, useSession } from "next-auth/react";
 import NextImage from "next/future/image";
-import { ReactElement } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import superjson from "superjson";
 import Layout from "../../components/layout";
 import EditImageOverlay from "../../components/upload-image";
@@ -59,6 +59,7 @@ const Petition: NextPageWithLayout<
   const embeddedSignUrlMutation =
     trpc.petition.createEmbeddedSignUrl.useMutation();
   const session = useSession();
+  const [numSignatures, setNumSignatures] = useState(0);
 
   const handleSignClick = () => {
     // TODO: do something better here than just making the button do nothing
@@ -100,6 +101,16 @@ const Petition: NextPageWithLayout<
   );
   const privatePetition = privatePetitionQuery.data?.petition;
   const userIsAdmin = !!privatePetition;
+
+  const minSignatures = 0;
+  const maxRandomSignatures = 5_000;
+  const maxSignatures = 50_000;
+  useEffect(() => {
+    const fakeNumSignatures = Math.floor(
+      Math.random() * (maxRandomSignatures - minSignatures) + minSignatures
+    );
+    setNumSignatures(fakeNumSignatures);
+  }, []);
 
   if (publicPetitionQuery.isLoading) {
     // won't happen since we're using `fallback: "blocking"`
@@ -187,6 +198,8 @@ const Petition: NextPageWithLayout<
     </div>
   );
 
+  const formatter = Intl.NumberFormat("en", { notation: "compact" });
+
   return (
     <main className="container mx-auto">
       <div className="h-12" />
@@ -201,14 +214,27 @@ const Petition: NextPageWithLayout<
               ))}
             </div>
           </article>
-          <div>
-            <h2 className="text-xl">Ready to water this sapling?</h2>
-            <button
-              className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded"
-              onClick={handleSignClick}
-            >
-              Sign
-            </button>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="overflow-hidden h-2 text-xs flex rounded bg-emerald-200">
+                <div
+                  style={{ width: `${(numSignatures / maxSignatures) * 100}%` }}
+                  className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-teal-600"
+                ></div>
+              </div>
+              <div className="text-sm text-neutral-600">
+                {formatter.format(numSignatures)} Signatures
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-neutral-600">Ready to water this sapling?</h2>
+              <button
+                className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded"
+                onClick={handleSignClick}
+              >
+                Sign
+              </button>
+            </div>
           </div>
         </div>
       </div>
