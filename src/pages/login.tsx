@@ -77,8 +77,8 @@ const NormalLogin: FC<{ providers: NextAuthProviders }> = ({ providers }) => {
 
   useEffect(() => {
     if (!router.isReady) return;
-    // default to redirecting user to homepage after login if no callbackUrl is present in query params
-    const url = (router.query["callbackUrl"] as string | undefined) || "/";
+    // default to redirecting user to the homepage after login if no callbackUrl is present in query params
+    const url = (router.query["callbackUrl"] as string | undefined) || "/me";
     setCallbackUrl(url);
   }, [router.isReady, router.query]);
 

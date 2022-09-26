@@ -21,7 +21,7 @@ const Layout: FC<Props> = ({ children }) => {
       </Head>
 
       <nav className="flex items-center justify-between flex-wrap bg-teal-600 p-6">
-        <NextLink href="/">
+        <NextLink href="/me">
           <div className="flex items-center flex-shrink-0 text-white mr-6 font-semibold text-xl tracking-tight cursor-pointer">
             Saplings
           </div>
