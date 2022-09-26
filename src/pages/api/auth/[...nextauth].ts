@@ -22,7 +22,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: "/new/account",
+    signIn: "/login",
   },
 };
 

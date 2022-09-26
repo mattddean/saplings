@@ -34,7 +34,7 @@ This is an app bootstrapped according to the [init.tips](https://init.tips) stac
 
 ## TODO
 
-- Add navbar
-- Allow signing in without creating a Sapling
 - Design sapling page
 - Design homepage
+- Support Dropbox login
+- Improve mobile navbar

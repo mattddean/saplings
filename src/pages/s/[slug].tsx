@@ -4,15 +4,17 @@ import type {
   GetStaticPaths,
   GetStaticProps,
   InferGetStaticPropsType,
-  NextPage,
 } from "next";
 import { useSession } from "next-auth/react";
 import NextImage from "next/future/image";
+import { ReactElement } from "react";
 import superjson from "superjson";
+import Layout from "../../components/layout";
 import { env } from "../../env/client.mjs";
 import { createContextInner } from "../../server/trpc/context";
 import { appRouter } from "../../server/trpc/router";
 import { trpc } from "../../utils/trpc";
+import { NextPageWithLayout } from "../_app.jsx";
 
 export const getStaticProps: GetStaticProps<{
   trpcState: DehydratedState;
@@ -50,9 +52,9 @@ export const getStaticPaths: GetStaticPaths = () => {
   };
 };
 
-const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
-  slug,
-}) => {
+const Petition: NextPageWithLayout<
+  InferGetStaticPropsType<typeof getStaticProps>
+> = ({ slug }) => {
   const embeddedSignUrlMutation =
     trpc.petition.createEmbeddedSignUrl.useMutation();
 
@@ -120,6 +122,10 @@ const Petition: NextPage<InferGetStaticPropsType<typeof getStaticProps>> = ({
       </div>
     </div>
   );
+};
+
+Petition.getLayout = (page: ReactElement) => {
+  return <Layout>{page}</Layout>;
 };
 
 export default Petition;
