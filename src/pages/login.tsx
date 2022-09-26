@@ -2,10 +2,9 @@ import { useAtom } from "jotai";
 import { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { getProviders, signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import { FC, useEffect, useRef } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import CreatePetitionLayout from "../components/create-petition-layout";
 import Layout from "../components/layout";
-import { redirectSlugAtom as redirectLinkAtom } from "../state/redirect-petition-slug";
 import { unauthenticatedPetitionTitleAtom } from "../state/unauthenticated-petition";
 import { trpc } from "../utils/trpc";
 import { NextPageWithLayout } from "./_app";
@@ -45,7 +44,10 @@ const CreatingSaplingSpinner: FC = () => {
   );
 };
 
-const ProviderList: FC<{ providers: NextAuthProviders }> = ({ providers }) => {
+const ProviderList: FC<{
+  providers: NextAuthProviders;
+  callbackUrl?: string;
+}> = ({ providers, callbackUrl }) => {
   if (!providers) {
     // we never expect to get here
     throw new Error("Internal server error");
@@ -55,7 +57,7 @@ const ProviderList: FC<{ providers: NextAuthProviders }> = ({ providers }) => {
     <>
       {Object.values(providers).map((provider) => (
         <div key={provider.name}>
-          <button onClick={() => signIn(provider.id)}>
+          <button onClick={() => signIn(provider.id, { callbackUrl })}>
             Sign in with {provider.name}
           </button>
         </div>
@@ -64,80 +66,25 @@ const ProviderList: FC<{ providers: NextAuthProviders }> = ({ providers }) => {
   );
 };
 
-/** Handle normal logins (redirect user to homepage after logging in). */
+/** Handle normal logins (redirect user based on next-auth callback url). */
 const NormalLogin: FC<{ providers: NextAuthProviders }> = ({ providers }) => {
-  const session = useSession();
   const router = useRouter();
+  const [callbackUrl, setCallbackUrl] = useState<string | undefined>(undefined);
 
-  // The user will be sent back to this page after logging in, so we handle that here.
-  // Log the user in and redirect them to the homepage.
   useEffect(() => {
-    if (session.status !== "authenticated") return;
+    if (!router.isReady) return;
+    // default to redirecting user to homepage after login if no callbackUrl is present in query params
+    const url = (router.query["callbackUrl"] as string | undefined) || "/";
+    setCallbackUrl(url);
+  }, [router.isReady, router.query]);
 
-    const asyncFn = async () => {
-      // wait at least 10 seconds for router to be ready
-      const waitMs = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
-      for (let i = 0; i < 2000; i++) {
-        await waitMs(5);
-        if (router.isReady) break;
-      }
-      if (!router.isReady) throw new Error("Unable to redirect to petition");
-
-      // send user to their new petition
-      await router.replace("/");
-    };
-    asyncFn().catch((error) => {
-      throw error;
-    });
-  }, [router, session.status]);
-
+  // we only want to render the provider list once we have obtained the callback url from the router so that the
+  // user doesn't end up stuck on the login page by clicking the sign in button before we've determined the callback url
   return (
     <Layout>
-      <ProviderList providers={providers} />
-    </Layout>
-  );
-};
-
-/** Handle redirect logins (redirect user to specified redirectLink after logging in). */
-const RedirectLogin: FC<{
-  providers: NextAuthProviders;
-  redirectLink: string;
-  setRedirectLink: (newVal: string | undefined) => any;
-}> = ({ providers, setRedirectLink, redirectLink }) => {
-  const session = useSession();
-  const router = useRouter();
-
-  // The user will be sent back to this page after logging in, so we handle that here.
-  // Log the user in and redirect them to the page given in redirectLink.
-  useEffect(() => {
-    if (session.status !== "authenticated") return;
-
-    const asyncFn = async () => {
-      // wait at least 10 seconds for router to be ready
-      const waitMs = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
-      for (let i = 0; i < 2000; i++) {
-        await waitMs(5);
-        if (router.isReady) break;
-      }
-      if (!router.isReady) throw new Error("Unable to redirect to petition");
-
-      // clean up after ourselves; this will indicate to the login page in the future that it
-      // doesn't need to handle creating a petition anymore
-      setRedirectLink(undefined);
-
-      // send user to their new petition
-      await router.replace(redirectLink);
-    };
-    asyncFn().catch((error) => {
-      throw error;
-    });
-  }, [redirectLink, router, session.status, setRedirectLink]);
-
-  return (
-    <Layout>
-      <ProviderList providers={providers} />
+      {!!callbackUrl && (
+        <ProviderList providers={providers} callbackUrl={callbackUrl} />
+      )}
     </Layout>
   );
 };
@@ -175,15 +122,6 @@ const CreatePetitionStep2: FC<{
       const result = await createPetitionAndUserMutation.mutateAsync({
         title: unauthenticatedPetitionTitle,
       });
-
-      // wait at least 10 seconds for router to be ready
-      const waitMs = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
-      for (let i = 0; i < 2000; i++) {
-        await waitMs(5);
-        if (router.isReady) break;
-      }
-      if (!router.isReady) throw new Error("Unable to redirect to petition");
 
       // clean up after ourselves; this will indicate to the login page in the future that it
       // doesn't need to handle creating a petition anymore
@@ -231,8 +169,6 @@ const Account: NextPageWithLayout<
   // the truthiness of the value of this local storage atom tells us that we're part of the petition creation flow rather than handling a normal login.
   const [unauthenticatedPetitionTitle, setUnauthenticatedPetitionTitle] =
     useAtom(unauthenticatedPetitionTitleAtom);
-  // the truthiness of the value of this local storage atom tells us we need to redirect to the given page when done
-  const [redirectLink, setRedirectLink] = useAtom(redirectLinkAtom);
 
   if (unauthenticatedPetitionTitle) {
     return (
@@ -240,16 +176,6 @@ const Account: NextPageWithLayout<
         providers={providers}
         unauthenticatedPetitionTitle={unauthenticatedPetitionTitle}
         setUnauthenticatedPetitionTitle={setUnauthenticatedPetitionTitle}
-      />
-    );
-  }
-
-  if (redirectLink) {
-    return (
-      <RedirectLogin
-        providers={providers}
-        redirectLink={redirectLink}
-        setRedirectLink={setRedirectLink}
       />
     );
   }
