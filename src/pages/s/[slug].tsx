@@ -61,9 +61,14 @@ const Petition: NextPageWithLayout<
   const session = useSession();
 
   const handleSignClick = () => {
+    // TODO: do something better here than just making the button do nothing
+    if (session.status === "loading") {
+      return;
+    }
+
     // The user must be logged in to sign a petition, so we send them to the login page if they're not.
     // They should be sent right back to this petition page once they're done logging in.
-    if (session.status !== "authenticated") {
+    if (session.status === "unauthenticated") {
       signIn();
       return;
     }
@@ -157,7 +162,7 @@ const Petition: NextPageWithLayout<
             petitionSlug={slug}
             className={`cursor-pointer h-full w-full rounded-lg z-10 ${
               !mainImage ? "bg-gray-200" : ""
-            } hover:bg-white peer opacity-40 transition-colors`}
+            } hover:bg-neutral-200 peer opacity-40 transition-colors`}
             style={{
               gridArea: "1 / 1 / 2 / 2",
               display: "grid",
@@ -197,8 +202,13 @@ const Petition: NextPageWithLayout<
             </div>
           </article>
           <div>
-            <h2>Sign this Petition</h2>
-            <button onClick={handleSignClick}>Sign</button>
+            <h2 className="text-xl">Ready to water this sapling?</h2>
+            <button
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded"
+              onClick={handleSignClick}
+            >
+              Sign
+            </button>
           </div>
         </div>
       </div>

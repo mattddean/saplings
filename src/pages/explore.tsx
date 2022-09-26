@@ -2,12 +2,12 @@ import { ReactElement } from "react";
 import Layout from "../components/layout";
 import { NextPageWithLayout } from "./_app";
 
-const Petition: NextPageWithLayout = () => {
+const Explore: NextPageWithLayout = () => {
   return <></>;
 };
 
-Petition.getLayout = (page: ReactElement) => {
+Explore.getLayout = (page: ReactElement) => {
   return <Layout>{page}</Layout>;
 };
 
-export default Petition;
+export default Explore;

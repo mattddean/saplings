@@ -16,12 +16,13 @@ model Example {
 }
 
 model Petition {
-  id     String             @id @default(cuid())
-  title  String
-  images PetitionImage[]
-  slug   String             @unique
-  users  UsersOnPetitions[]
-  body   String?            @db.Text
+  id                 String              @id @default(cuid())
+  title              String
+  images             PetitionImage[]
+  slug               String              @unique
+  users              UsersOnPetitions[]
+  body               String?             @db.Text
+  petitionSignatures PetitionSignature[]
 
   @@map("petitions")
 }
@@ -37,6 +38,16 @@ model PetitionImage {
   petitionId          String   @map("petition_id")
 
   @@map("petition_images")
+}
+
+model PetitionSignature {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @map("user_id")
+  petition   Petition @relation(fields: [petitionId], references: [id])
+  petitionId String   @map("petition_id")
+
+  @@map("petition_signatures")
 }
 
 // nextauth
@@ -72,15 +83,16 @@ model Session {
 
 // nextauth
 model User {
-  id               String             @id @default(cuid())
-  name             String?
-  email            String?            @unique
-  emailVerified    DateTime?          @map("email_verified")
-  image            String?
-  accounts         Account[]
-  sessions         Session[]
-  petitionId       String?            @map("petition_id")
-  usersOnPetitions UsersOnPetitions[]
+  id                 String              @id @default(cuid())
+  name               String?
+  email              String?             @unique
+  emailVerified      DateTime?           @map("email_verified")
+  image              String?
+  accounts           Account[]
+  sessions           Session[]
+  petitionId         String?             @map("petition_id")
+  usersOnPetitions   UsersOnPetitions[]
+  petitionSignatures PetitionSignature[]
 
   @@map("users")
 }

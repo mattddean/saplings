@@ -54,15 +54,19 @@ const ProviderList: FC<{
   }
 
   return (
-    <>
+    <main className="container flex flex-col items-center justify-center min-h-screen p-4 mx-auto">
       {Object.values(providers).map((provider) => (
         <div key={provider.name}>
-          <button onClick={() => signIn(provider.id, { callbackUrl })}>
+          <button
+            className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => signIn(provider.id, { callbackUrl })}
+          >
             Sign in with {provider.name}
           </button>
         </div>
       ))}
-    </>
+      <div className="h-96" /> {/** Spacer to move the content up a bit */}
+    </main>
   );
 };
 

@@ -84,25 +84,53 @@ export const petitionRouter = t.router({
         },
       };
     }),
+  getAllOfMine: authedProcedure.query(async ({ ctx }) => {
+    const petitions = await ctx.prisma.petition.findMany({
+      // petitions where we are an admin
+      where: {
+        users: {
+          some: {
+            user: { id: ctx.session.user.id },
+            role: { name: UserPetitionRoleName.ADMIN },
+          },
+        },
+      },
+      select: {
+        body: true,
+        slug: true,
+        title: true,
+        images: {
+          select: {
+            cloudinarySecureUrl: true,
+            alt: true,
+          },
+        },
+      },
+    });
+    return petitions.map((petition) => ({
+      petition: {
+        images: petition.images.map((image) => ({
+          url: image.cloudinarySecureUrl,
+          alt: image.alt,
+        })),
+        slug: petition.slug,
+        title: petition.title,
+        body: petition.body,
+      },
+    }));
+  }),
   createPetitionAndUser: authedProcedure
     .input(z.object({ title: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // the ideal slug has no random letters tacked on at the end
       const idealSlug = buildSlug(input.title);
 
-      const userEmail = ctx.session.user.email;
-      if (!userEmail) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Missing email",
-        });
-      }
-
       // we should really only ever reach 2 tries given that we're tacking on random letters at the end,
       // but we don't want to overwork our database if something is weird
       const MAX_TRIES = 30;
       let slug = idealSlug;
       let newPetition;
+      // TODO: remove this seed data once users can edit the petition body
       const body = loremIpsum({ count: 3, units: "paragraphs" });
       for (let i = 0; i < MAX_TRIES; i++) {
         try {
@@ -115,7 +143,7 @@ export const petitionRouter = t.router({
                 create: {
                   user: {
                     // the user must already exist because this endpoint requires an authenticated user
-                    connect: { email: userEmail },
+                    connect: { id: ctx.session.user.id },
                   },
                   role: {
                     // "connect or create" on the admin role avoids a seeding step, but maybe should be removed in the future
