@@ -6,9 +6,11 @@ A simplification of in-person signatures.
 
 ### Set up .env file
 
-Copy .env.example to .env.
+Set up .env file based on [src/env/schema.mjs](./src/env/schema.mjs)
 
 Set up [Google authentication for NextAuth](https://next-auth.js.org/providers/google) for your users and fill in GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your .env file.
+
+Enable experimental [Scheduled Functions](https://docs.netlify.com/netlify-labs/experimental-features/scheduled-functions/#getting-started) in Netlify to support [this cron job](/netlify/functions/caffeinate-planetscale.ts).
 
 ### Install dependencies
 

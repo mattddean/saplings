@@ -17,7 +17,8 @@
     "tailwindcss",
     "tanstack",
     "trpc",
-    "zustand"
+    "zustand",
+    "caffeinate"
   ],
   "ignoreWords": [
     "mapboxgl",
