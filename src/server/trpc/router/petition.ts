@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import * as Cloudinary from "cloudinary";
 import * as HelloSignSDK from "hellosign-sdk";
+import { loremIpsum } from "lorem-ipsum";
 import ShortUniqueId from "short-unique-id";
 import { z } from "zod";
 import { UserPetitionRoleName } from "../../../../prisma/types";
@@ -25,6 +26,7 @@ export const petitionRouter = t.router({
           },
           slug: true,
           title: true,
+          body: true,
         },
       });
       if (!petition) return { petition: undefined };
@@ -37,6 +39,7 @@ export const petitionRouter = t.router({
           })),
           slug: petition.slug,
           title: petition.title,
+          body: petition.body,
         },
       };
     }),
@@ -61,6 +64,7 @@ export const petitionRouter = t.router({
           },
           slug: true,
           title: true,
+          body: true,
         },
       });
       if (!petition)
@@ -76,6 +80,7 @@ export const petitionRouter = t.router({
           })),
           slug: petition.slug,
           title: petition.title,
+          body: petition.body,
         },
       };
     }),
@@ -98,12 +103,14 @@ export const petitionRouter = t.router({
       const MAX_TRIES = 30;
       let slug = idealSlug;
       let newPetition;
+      const body = loremIpsum({ count: 3, units: "paragraphs" });
       for (let i = 0; i < MAX_TRIES; i++) {
         try {
           const petition = await ctx.prisma.petition.create({
             data: {
               slug,
               title: input.title,
+              body,
               users: {
                 create: {
                   user: {

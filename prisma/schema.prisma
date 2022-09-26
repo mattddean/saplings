@@ -21,6 +21,7 @@ model Petition {
   images PetitionImage[]
   slug   String             @unique
   users  UsersOnPetitions[]
+  body   String?            @db.Text
 
   @@map("petitions")
 }

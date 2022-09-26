@@ -16,10 +16,7 @@ const EditImageOverlay: FC<{
   const createImageMutation = trpc.petition.linkImage.useMutation();
 
   const uploadImage = (image: File | undefined) => {
-    if (!image) {
-      // ui should have prevented this
-      throw new Error();
-    }
+    if (!image) return;
 
     const { data } = signatureQuery;
     if (!data) {

@@ -185,16 +185,24 @@ const Petition: NextPageWithLayout<
   return (
     <main className="container mx-auto">
       <div className="h-12" />
-      <article>
+      <div className="space-y-10">
         <h1 className="text-5xl text-center">{petition.title}</h1>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="relative h-64 w-full">{imageArea}</div>
+        <div className="grid grid-cols-3 gap-16">
+          <article className="w-full col-span-2 space-y-12">
+            {imageArea}
+            <div className="space-y-8 text-lg leading-loose">
+              {petition.body?.split("\n").map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
+            </div>
+          </article>
           <div>
             <h2>Sign this Petition</h2>
             <button onClick={handleSignClick}>Sign</button>
           </div>
         </div>
-      </article>
+      </div>
+      <div className="h-12" />
     </main>
   );
 };
